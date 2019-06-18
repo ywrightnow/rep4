@@ -1384,6 +1384,8 @@ public class Resource {
 
 #### 2.1、如果要完成CAS单用户的功能需要对CAS进行源码修改：
 
+cas-server-4.0.0-release\cas-server-4.0.0\cas-server-core\src\main\java 位置
+
 ```java
 org.jasig.cas.CentralAuthenticationServiceImpl
 ```
