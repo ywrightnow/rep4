@@ -1358,13 +1358,244 @@ public class Resource {
 
 # 第二章 spring security + cas
 
-## 一、spring security与cas整合
 
 
+## 一、spring security整合cas实现一个用户同时只能登录一次
 
-## 二、spring security整合cas实现一个用户同时只能登录一次
+​	先说说如何实现一个用户同时只能登录一次，传统单系统应用的解决方案，大体思路是将用户与session或ip与session进行绑定。这样一个用户或一个ip通知只能有一个有效的session。
 
+### 	1、spring security的解决方案。
 
+​	spring security默认提供可session管理机制。我们可以通过设置保证当前用户只能有一个活跃session。如果用户在其他地方登陆。就会导致用户之前登陆的session失效。从而实现挤出登录的功能。
+
+​	![](spring security单用户登录.jpg)
+
+​	
+
+### 	2、spring security整合cas实现
+
+​	spring security在集成了cas之后。此时如果需要实现一个用户同时只能登录一次的话。使用之前的spring security的session管理机制是无法实现的。因为cas实现单点登录后，用户是否登录的状态是由cas服务器中保存的TGT（票据授权票据）来决定的。所有如果只是单纯的删除之前用户登录的session是无法实现挤出登录的。
+
+​	我们需要做的是将TGT与登录用户进行绑定，一个用户只能同时有一个TGT存在，如果用户在其他地方再次进行登录。我们就将上次用户登录的TGT从CAS服务器中删除，从而实现挤出登录的效果。
+
+![](cas单用户登录.jpg)
+
+​	
+
+#### 2.1、如果要完成CAS单用户的功能需要对CAS进行源码修改：
+
+```java
+org.jasig.cas.CentralAuthenticationServiceImpl
+```
+
+ 在这个类中首先先验证用户名，密码。然后进行创建TGT,ST,然后在缓存TGT,并且ST有效性的验证，以及销毁TGT都是在这个类中，所以这个类可以说是CAS的核心类了；我们对这个类做如下修改：
+
+```java
+public  class CentralAuthenticationServiceImpl implements CentralAuthenticationService {
+
+   
+   。。。。。。
+        
+    /**
+     * @throws IllegalArgumentException if the credentials are null.
+     * 该方法是创建TGT的。我们可以在创建TGT时，删除用户之前的TGT
+     */
+    @Audit(
+        action="TICKET_GRANTING_TICKET",
+        actionResolverName="CREATE_TICKET_GRANTING_TICKET_RESOLVER",
+        resourceResolverName="CREATE_TICKET_GRANTING_TICKET_RESOURCE_RESOLVER")
+    @Profiled(tag = "CREATE_TICKET_GRANTING_TICKET", logFailuresSeparately = false)
+    @Transactional(readOnly = false)
+    public String createTicketGrantingTicket(final Credential... credentials)
+            throws AuthenticationException, TicketException {//生成TGT的方法
+
+        Assert.notNull(credentials, "credentials cannot be null");
+
+        final Authentication authentication = this.authenticationManager.authenticate(credentials);
+
+        final TicketGrantingTicket ticketGrantingTicket = new TicketGrantingTicketImpl(
+            this.ticketGrantingTicketUniqueTicketIdGenerator
+                .getNewTicketId(TicketGrantingTicket.PREFIX),
+            authentication, this.ticketGrantingTicketExpirationPolicy);
+
+        //====== 删除用户上一次的TGT add by 春哥 ======
+        String uid = credentials[0].getId();
+        Ticket ticket = this.ticketRegistry.getTicket(uid);//根据用户查找
+        if(ticket != null){
+            this.destroyTicketGrantingTicket(ticket.getId());
+        }
+        //======= end ======
+
+        this.ticketRegistry.addTicket(ticketGrantingTicket);
+        return ticketGrantingTicket.getId();
+    }
+
+   。。。。。。
+}
+```
+
+我们还需要修改下面这个类：
+
+```
+org.jasig.cas.ticket.registry.DefaultTicketRegistry
+```
+
+这个类主要是进行管理和存储TGT和ST,以及记录TGT和ST之间的关系，及通过tickeid查询ticket,添加ticket,删除ticked等
+
+```java
+public final class DefaultTicketRegistry extends AbstractTicketRegistry  {
+
+    /** A HashMap to contain the tickets. */
+    private final Map<String, Ticket> cache; //票据存储的容器
+
+    /** ======== 保存用户名与票据ID对应关系 保证用户名和TGT是唯一对应的 add by 春哥 ========*/
+    private final Map<String, String> nameIdCache;
+
+    public DefaultTicketRegistry() {
+        this.cache = new ConcurrentHashMap<String, Ticket>();
+         /** ======== 初始化 add by 春哥 ========*/
+        this.nameIdCache = new ConcurrentHashMap<String, String>();
+    }
+
+    /**
+     * Creates a new, empty registry with the specified initial capacity, load
+     * factor, and concurrency level.
+     *
+     * @param initialCapacity - the initial capacity. The implementation
+     * performs internal sizing to accommodate this many elements.
+     * @param loadFactor - the load factor threshold, used to control resizing.
+     * Resizing may be performed when the average number of elements per bin
+     * exceeds this threshold.
+     * @param concurrencyLevel - the estimated number of concurrently updating
+     * threads. The implementation performs internal sizing to try to
+     * accommodate this many threads.
+     */
+    public DefaultTicketRegistry(final int initialCapacity, final float loadFactor, final int concurrencyLevel) {
+        this.cache = new ConcurrentHashMap<String, Ticket>(initialCapacity, loadFactor, concurrencyLevel);
+        /** ======== 初始化 add by 春哥 ========*/
+        this.nameIdCache = new ConcurrentHashMap<String, String>();
+    }
+
+    /**
+     * {@inheritDoc}
+     * @throws IllegalArgumentException if the Ticket is null.
+     */
+    @Override
+    public void addTicket(final Ticket ticket) {
+        Assert.notNull(ticket, "ticket cannot be null");
+
+        logger.debug("Added ticket [{}] to registry.", ticket.getId());
+        this.cache.put(ticket.getId(), ticket);
+
+        //======== 保存username 和 TGT 的关系 add by 春哥 ========
+        if(ticket instanceof TicketGrantingTicket){
+            String username = ((TicketGrantingTicket)ticket).getAuthentication().getPrincipal().toString().trim();
+            this.nameIdCache.put(username, ticket.getId());
+        }
+        //======== end ========
+
+    }
+
+    public Ticket getTicket(final String ticketId) {
+        if (ticketId == null) {
+            return null;
+        }
+
+        logger.debug("Attempting to retrieve ticket [{}]", ticketId);
+        final Ticket ticket = this.cache.get(ticketId);
+
+        if (ticket != null) {
+            logger.debug("Ticket [{}] found in registry.", ticketId);
+        }
+
+        //======== 根据用户ID获取当前TGT 并返回  add by 春哥 ========
+        final String tid = this.nameIdCache.get(ticketId);
+        if(tid != null){
+            final Ticket ticketU = this.cache.get(tid);
+
+            if(ticketU != null) {
+                logger.debug("Ticket [{}] found in registry.", ticketId);
+                return ticketU;
+            }
+        }
+        // ======== end ========
+
+        return ticket;
+    }
+
+    public boolean deleteTicket(final String ticketId) {
+        if (ticketId == null) {
+            return false;
+        }
+        logger.debug("Removing ticket [{}] from registry", ticketId);
+
+        final Ticket ticket = getTicket(ticketId);
+        if (ticket == null) {
+            return false;
+        }
+        // ======== 删除当前用户TGT add by 春哥 ========
+        if (ticket instanceof TicketGrantingTicket) {
+            logger.debug("Removing children of ticket [{}] from the registry.", ticket);
+            deleteChildren((TicketGrantingTicket) ticket);
+            // 根据用户名从nameIdCache中删除当前用户对应的TGT
+            String username = ((TicketGrantingTicket)ticket).getAuthentication().getPrincipal().toString().trim();
+            this.nameIdCache.remove(username);
+        }
+        //======== end ========
+
+        return (this.cache.remove(ticketId) != null);
+    }
+
+    //======== 从cache中删除当前用户对应的TGT add by 春哥 ========
+    private void deleteChildren(final TicketGrantingTicket ticket) {
+        // delete service tickets
+        final Map<String, Service> services = ticket.getServices();
+        if (services != null && !services.isEmpty()) {
+            for (final Map.Entry<String, Service> entry : services.entrySet()) {
+                if (this.cache.remove(entry.getKey()) != null) {
+                    logger.trace("Removed service ticket [{}]", entry.getKey());
+                } else {
+                    logger.trace("Unable to remove service ticket [{}]", entry.getKey());
+                }
+            }
+        }
+    }
+    //======== end ========
+
+    public Collection<Ticket> getTickets() {
+        return Collections.unmodifiableCollection(this.cache.values());
+    }
+
+    public int sessionCount() {
+        int count = 0;
+        for (Ticket t : this.cache.values()) {
+            if (t instanceof TicketGrantingTicket) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    public int serviceTicketCount() {
+        int count = 0;
+        for (Ticket t : this.cache.values()) {
+            if (t instanceof ServiceTicket) {
+                count++;
+            }
+        }
+        return count;
+    }
+}
+```
+
+#### 2.2、修改完成后需要将者两个类，编译成class文件，放入cas对应的部署目录下。
+
+```java
+.\apache-tomcat-cas\webapps\cas\WEB-INF\classes\org\jasig\cas\ticket\registry\DefaultTicketRegistry.class
+
+.\apache-tomcat-cas\webapps\cas\WEB-INF\classes\org\jasig\cas\CentralAuthenticationServiceImpl.class
+
+```
 
 
 
