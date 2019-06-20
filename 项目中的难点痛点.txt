@@ -1,0 +1,49 @@
+1、分布式ID生成器。
+	UUID java的UUIDUtils 或者使用mysql 的UUID()函数
+	Redis 的 incr命令
+	规定每一个mysql自增范围：第一个mysql（1-1000万） 、（1000万零1-2000万）。。。。
+	java代码中通过一些算法生成一个主键 （自增 有序 唯一）：
+		snowflake算法 1bit +  时间戳（01010 41bit） + 10bit(机房id + 机器id) + 12bit随机=64bit --> 十进制数   
+
+
+
+2、关于spring声明式事务的问题？？
+完成一个业务A  -----> 调用副业务B   (A是一个非常重要的主业务。   B副业务不能影响主业务的事务 B也必须有事务！！！)
+
+实例代码如下
+##########################################################################################################
+#    @Transactional(propagation=Propagation.REQUIRED)
+#    	public void addTrade(){//
+#    		this.tradeMapper.insertTrade("13355556666", "200");//主业务A 
+#    		
+#    		try {
+#					//副业务B  B不能影响A 
+#    			this.addTradeLog();//this是什么对象  --> 原来的对象 不是代理对象   所有此处不能直接调用 addTradeLog() 方法！！
+#    			// 如果按照上面的方式调用，那么addTradeLog()方法的事务注解会失效 @Transactional(propagation=Propagation.REQUIRES_NEW) 
+#         // 因为此时调用方法的是原生类对象，而非代理对象，故没有通过aop切面增强事务注解完全失效！！
+#    			
+#					// 解决？？ 获取代理对象，通过代理对象调用，而不是使用this关键字！！
+#         // 调用下面的方法获取当前aop的代理对象。
+#					// 要想要下面的方法生效，如要在spring配置文件中作如下配置：<aop:aspectj-autoproxy expose-proxy="true"></aop:aspectj-autoproxy>  该配置表示暴露aop的代理对象，默认是false不暴露。
+#					OrderServiceImpl service = (OrderServiceImpl) AopContext.currentProxy();
+#					service.addTradeLog();
+#    		} catch (Exception e) {
+#    			e.printStackTrace();
+#    		}
+#    	}
+#    	
+#    	
+#    	@Transactional(propagation=Propagation.REQUIRES_NEW)
+#    	public void addTradeLog(){//A(有一个事务控制) 中调动B(需要事务，重新创建一个事务)  
+#    		this.tradeLogMapper.insertTradeLog("aaa", 1);
+#    		int i=10/0;
+#    		this.tradeLogMapper.insertTradeLog("bbb", 1);
+#    	}
+###########################################################################################################
+此处的坑主要来自于aop切面编程中，如果存在一个类中的实例方法调用当前类中的其它实例方法。那么被调用的方法是不会被切面的。
+详见博客
+https://blog.csdn.net/wt_better/article/details/84843932
+
+此处我们还需要掌握spring声明式事务的一些特性。尤其是事务的传播属性。这个点面试时会常常被提及。可以看看下面的博客，讲的不错！！
+https://www.jianshu.com/p/25c8e5a35ece
+

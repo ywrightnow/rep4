@@ -36,6 +36,18 @@ tomcat存储压力很大！！  挤压/占用 tomcat的内存  可能会影响tomcat的性能。
 
 8、Redis 内存！！    高可用集群（ ）  持久化！！    ------>  集群怎么搭  持久化怎么做？？【】   -----> 运维人员搭建的！！
 		Redis宕机   ---> 购物车信息（很重要）丢失！！  几乎为 0    
+		
+		
+		
+9、除了cookie可以在浏览器端存储数据。在实际开发中浏览器还提供了另外两个东西来存储数据。被称为浏览器端存储。
+HTML5 新特性！！
+localStorage    5M
+sessionStorage  5M
 
+购物车为什么不使用浏览器存储？？ 不存储在 localStorage/sessionStorage   ？？
 
+1、浏览器存储跟服务器没关系。数据不会自动带到服务器端。所以使用它来存储购物车数据不太合适。 
+如果需要将浏览器存储中的数据传递到后台也可以 ---->    拿到数据，通过get请求或post请求传参的方式将数据传递到后台。
 
+如果需要了解cookie与localStorage、sessionStorage。可以参阅如下地址
+https://www.cnblogs.com/pengc/p/8714475.html
