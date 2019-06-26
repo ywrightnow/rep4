@@ -1,0 +1,79 @@
+Redis单线程！！
+	1、基于内存
+	2、非阻塞IO
+	3、避免了多线程间切换的竞态消耗
+	
+	
+key(字符串)-value（值的类型）
+
+字符串 set key value | get key
+hash   hset hget   map<key,value> 
+list集合  底层 链表的实现 
+set集合 无序 且不重复 集合
+zset集合 有序 且不重复的集合 集合中的每一个元素关联了一个分数。根据分数升序排序！！
+
+五种数据类型必须掌握 常用的命令浏览下！！
+
+bitmaps ：
+String字符串类型。提供了对字符串类型的值的位操作 bit oprators   010101010
+
+
+del key
+exists key
+type key
+ttl（s）/pttl（ms） 查看key的有效时间还剩多少
+keys * 
+设置key的存活时间
+	expire key 秒数
+	pexpire key 毫秒数
+移除有效时间
+	persist key 
+	
+	
+到了给定的过期时间就会删除？？
+怎么删除？？ Redis怎么就知道当前的key过期了。 
+1、主动删除
+		用户使用的时候才会删除。
+		expire key 100
+		
+		get key  检查有没有有效时间，有没有过期。如果过期，直接删除。
+		
+2、被动删除
+	 有一个定时任务 每个一段时间查看redis中的key 检查过期时间 如果过期则直接删除！！ 每秒10次 100ms一次！！
+	 不是全量的检查！！ 10万key！！ 随机抽查！！   每次随机20个  19个   20个 1个 0个  停止定时任务一段时间！！
+
+expire key 100
+过了100s后当前key一定不再redis中？？？？？
+
+
+
+16G 内存
+set 数据 
+
+Redis吃满服务器的内存？？？？？
+
+会！！    
+配置maxmemory？？ 8G   8.5G
+
+7.8 
+
+SET KEY VALUE 0.5g  此时就会超过最大内存
+
+
+超过8G,怎么办？？
+
+set 数据！！  内存淘汰策略！！
+1、报错。不能写入数据！！
+2、不报错。内存置换！！ 老的数据删除，腾出一些空间！！
+		内存置换策略：
+			lru：最近最少使用
+			allkeys-
+			volatile-
+			
+			random：随机
+			allkeys-
+			volatile-
+			
+			volatile-ttl：最少存活时间
+
+
