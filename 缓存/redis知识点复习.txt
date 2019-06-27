@@ -3,7 +3,7 @@ Redisµ¥Ïß³Ì£¡£¡
 	2¡¢·Ç×èÈûIO
 	3¡¢±ÜÃâÁË¶àÏß³Ì¼äÇÐ»»µÄ¾ºÌ¬ÏûºÄ
 	
-	
+#######################################################
 key(×Ö·û´®)-value£¨ÖµµÄÀàÐÍ£©
 
 ×Ö·û´® set key value | get key
@@ -17,6 +17,7 @@ zset¼¯ºÏ ÓÐÐò ÇÒ²»ÖØ¸´µÄ¼¯ºÏ ¼¯ºÏÖÐµÄÃ¿Ò»¸öÔªËØ¹ØÁªÁËÒ»¸ö·ÖÊý¡£¸ù¾Ý·ÖÊýÉýÐòÅÅÐò£
 bitmaps £º
 String×Ö·û´®ÀàÐÍ¡£Ìá¹©ÁË¶Ô×Ö·û´®ÀàÐÍµÄÖµµÄÎ»²Ù×÷ bit oprators   010101010
 
+#######################################################
 
 del key
 exists key
@@ -46,6 +47,7 @@ expire key 100
 ¹ýÁË100sºóµ±Ç°keyÒ»¶¨²»ÔÙredisÖÐ£¿£¿£¿£¿£¿
 
 
+#######################################################
 
 16G ÄÚ´æ
 set Êý¾Ý 
@@ -53,7 +55,7 @@ set Êý¾Ý
 Redis³ÔÂú·þÎñÆ÷µÄÄÚ´æ£¿£¿£¿£¿£¿
 
 »á£¡£¡    
-ÅäÖÃmaxmemory£¿£¿ 8G   8.5G
+ÅäÖÃ maxmemory£¿£¿ 8G   8.5G
 
 7.8 
 
@@ -75,5 +77,57 @@ set Êý¾Ý£¡£¡  ÄÚ´æÌÔÌ­²ßÂÔ£¡£¡
 			volatile-
 			
 			volatile-ttl£º×îÉÙ´æ»îÊ±¼ä
+
+
+#######################################################
+Redis³Ö¾Ã»¯
+redis´æ´¢»ùÓÚÄÚ´æ£¿£¿£¿   ÒâÍâå´»ú£¡£¡ ÄÚ´æÖÐµÄÊý¾Ý100%µÄ¶ªÊ§£¡£¡
+
+Á½ÖÖ·½Ê½
+	1¡¢RDB¿ìÕÕ(Ä¬ÈÏ·½Ê½)
+		ÔÚÄ³¸öÊ±»ú£¬½«redisÖÐµÄËùÓÐÊý¾Ý£¬¿ìÕÕ£¬Éú³ÉÒ»¸ö.rdb¶þ½øÖÆÎÄ¼þ¡£Õâ¸öÎÄ¼þ°üº¬µ±Ç°redis»º´æÖÐµÄËùÓÐÊý¾Ý¡£
+		
+		ÈçºÎ»Ö¸´Êý¾Ý£ºRedis·þÎñÖØÆôµÄÊ±ºò£¬¼ÓÔØ.rdb¶þ½øÖÆÊý¾ÝÎÄ¼þ¡£½«È«²¿Êý¾ÝÖØÐ´¼ÓÔØµ½RedisÖÐ¡£
+		
+		ºÎÊ±Ö´ÐÐ£ºredisµÄÅäÖÃÎÄ¼þÖÐÅäÖÃ¹æÔò 
+					Âú×ãÌõ¼þ ×Ô¶¯´¥·¢
+					 #save Ö´ÐÐRDB¿ìÕÕµÄÃüÁî
+						save 900 1   ÔÚ900ÃëÄÚ£¬´óÓÚµÈÓÚ1¸öÔöÉ¾¸Ä(Ó°ÏìÊý¾Ý)µÄÃüÁîÖ´ÐÐ¡£¾Í»áÖ´ÐÐsave¿ìÕÕ,½øÐÐ³Ö¾Ã»¯
+						save 300 10  ÔÚ300ÃëÄÚ£¬´óÓÚµÈÓÚ10¸öÔöÉ¾¸Ä(Ó°ÏìÊý¾Ý)µÄÃüÁîÖ´ÐÐ¡£¾Í»áÖ´ÐÐsave¿ìÕÕ,½øÐÐ³Ö¾Ã»¯
+						save 60 10000 ÔÚ60ÃëÄÚ£¬´óÓÚµÈÓÚ10000¸öÔöÉ¾¸Ä(Ó°ÏìÊý¾Ý)µÄÃüÁîÖ´ÐÐ¡£¾Í»áÖ´ÐÐsave¿ìÕÕ,½øÐÐ³Ö¾Ã»¯ 
+						     time  num   ÔÚtimeÃëÄÚ£¬´óÓÚµÈÓÚnum¸öÔöÉ¾¸Ä(Ó°ÏìÊý¾Ý)µÄÃüÁîÖ´ÐÐ¡£¾Í»áÖ´ÐÐRDB³Ö¾Ã»¯
+					ÊÖ¶¯Ö´ÐÐ£º
+						save  £º×èÈûredis £¬redis´ËÊ±²»ÄÜÖ´ÐÐÆäËûÃüÁî¡£  
+						bgsave£º	fork×ÓÏß³Ì¡£Ê¹ÓÃÕâ¸ö×ÓÏß³ÌÈ¥Ö´ÐÐ³Ö¾Ã»¯ÈÎÎñ¡£²»»á×èÈûRedis¡£
+					·¢ËÍshutdownÃüÁî£¬Õý³£¹Ø±Õredis¡£redisÔÚ¹Ø±ÕÇ°£¬Ö´ÐÐsaveÃüÁî£¬½øÐÐÒ»¸ö³Ö¾Ã»¯£¡£¡
+		
+		
+		
+	2¡¢AOFÎÄ¼þ×·¼Ó
+		½«¿Í»§¶ËÖ´ÐÐµÄÃüÁî(ÔöÉ¾¸Ä)½øÐÐ±£´æ£¬±£´æµ½.aofºó×ºÃûµÄÎÄ¼þ¡£°üº¬ÁËËùÓÐ¿Í»§¶ËµÄÔöÉ¾¸ÄµÄÃüÁî¡£
+		
+		ÈçºÎ»Ö¸´Êý¾Ý£º¶ÁÈ¡.aofÎÄ¼þ,ÖØÐÂÒÀ´ÎÖ´ÐÐaofÎÄ¼þÖÐµÄËùÓÐÃüÁî¡£Ô­·â²»¶¯µÄÖ´ÐÐÔ­À´µÄÃüÁî¡£Êý¾Ý¸úÔ­À´Ò²ÊÇÒ»Ñù£¡£¡
+		
+		ºÎÊ±Ö´ÐÐ£ºÄ¬ÈÏÃ»ÓÐ¿ªÆô£¬Ê×ÏÈÐèÒª¿ªÆôaof³Ö¾Ã»¯
+						appendonly no(²»¿ªÆô£¬Ä¬ÈÏÖµ) | yes(¿ªÆô)
+						
+						# appendfsync always  Ã¿Ö´ÐÐÒ»´ÎÃüÁî£¬½«¸ÃÃüÁîÐ´Èë.aofÎÄ¼þÖÐ¡£   1Ìõ ·çÏÕ¼«µØ  ÐÔÄÜÓ°Ïì»áºÜ´ó£¡£¡
+						appendfsync everysec  Ã¿ÃëÖÓ ½«ÓÃ»§Ö´ÐÐµÄÃüÁî´Ó²Ù×÷ÏµÍ³»º´æÖÐÐ´Èëµ½.aofÎÄ¼þÖÐ¡£ 
+						# appendfsync no      ÓÉ²Ù×÷ÏµÍ³¾ö¶¨Ê²Ã´Ê±ºò½«ÃüÁîÐ´Èë.aofÎÄ¼þÖÐ¡£Ê²Ã´Ê±ºò½«²Ù×÷ÏµÍ³»º´æÖÐµÄÃüÁîÐ´Èëµ½.aofÎÄ¼þÖÐ¡£
+						
+						ÓÃ»§ÔÚÖ´ÐÐredisÃüÁîµÄÊ±ºò£¬ÕâÐ©ÃüÁî»º´æÔÚ²Ù×÷ÏµÍ³µÄ»º´æÖÐ¡£
+
+
+												AOF     vs 				RDB
+³Ö¾Ã»¯ÎÄ¼þ´óÐ¡					´ó								Ð¡
+»Ö¸´Êý¾ÝµÄËÙ¶È					Âý								¿ì
+¶ªÊ§Êý¾ÝµÄ·çÏÕ					Ð¡								´ó					ËäÈ»×öÁË³Ö¾Ã»¯£¬µ«ÊÇ²»ÄÜ100%±£Ö¤²»¶ªÊ§Êý¾Ý
+
+
+redis³Ö¾Ã»¯¡£¿ÉÒÔ±£Ö¤£¬»ù±¾²»»á¶ªÊ§Êý¾Ý£¬¼´Ê¹¶ªÊ§Ò²Ö»ÊÇ¶ªÊ§²¿·ÖÊý¾Ý£¡£¡
+´ÅÅÌ  ---> ·þÎñÆ÷Õ¨ÁË£¡£¡£¡£¡
+¶¨ÆÚ±¸·Ýaof/rdbÎÄ¼þ¡£  ----> ÔÆ·þÎñÆ÷( °Ù¶ÈÔÆ¡¢°¢ÀïÔÆ  )  ÈÝÔÖ£¡£¡
+
+############################################################
 
 
