@@ -1,0 +1,109 @@
+开发流程（简单的原理）：
+		
+		SqlSessionFactoryBuilder   加载mybatis的核心配置文件
+					|
+		SqlSessionFactory	  	创建SqlSession对象
+					|
+		SqlSession		提供对数据库CRUD操作的api
+		
+
+核心文件：
+		
+
+mapper映射文件 ：编写sql
+	基本标签
+	<select> <update>  <insert>  <delete>
+	
+	参数传递		parameterType
+	  #{} 会预编译，可以防止sql注入   ${} sql语句中的字段名称 表名称(分库分表  t_xxx_20190706 t_xxx_20190707 t_xxx_20190708)是从前端传递过来的，${}   区别？？     
+	  
+	查询结果如何封装
+		resultType		java基本类 pojo map  这些类型的集合
+		resultMap	：查询字段名称和pojo属性名称不一致。
+								多表关联的数据封装：	Order  --- >private User user;   <assosiation>
+																			User  ---->  List<Order>        <collection>
+	
+	动态sql：
+		多条件查询  Product	  pname		pdesc		pbrand	
+				where 1=1                                  				<where>                
+				<if test="pname != null">                  						<if test="pname != null"> 
+					and pname = #{pname}                     							and pname = #{pname}    
+				</if>                                      						</if>                     
+				                                           						                          
+				<if test="pdesc != null">                  						<if test="pdesc != null"> 
+					and pdesc = #{pdesc}                     							and pdesc = #{pdesc}    
+				</if>                                      						</if>                     
+				                                           						                          
+				<if test="pbrand != null">                 						<if test="pbrand != null">
+					and pbrand = #{pbrand}                   							and pbrand = #{pbrand}  
+				</if>                                      						</if> 
+																													</where>    
+		
+		List<Integer>    pidList        List<Product>     where pid in (1212,1232,1323)
+				
+				<where>
+					<foreach   collection="list"  item="i" begin="pid in ("  end=")" seperator=",">
+							#{id}
+					</foreach>
+				</where>
+				
+		
+			动态更新：Product			update t_product set pname=#{pname},pdesc=#{pdesc},pbrand=#{pbrad} where pid = #{pid}
+			update t_product 
+				<set> 
+					<if test="pname != null"> 
+							pname=#{pname},
+					</if>
+					
+					<if test="pdesc != null"> 
+							pdesc=#{pdesc},
+					</if>
+					
+					<if test="pbrand!= null"> 
+							pbrand=#{pbrand},
+					</if>
+				</set>
+			where pid = #{pid}
+
+			mybatis如何实现分页？？
+			
+					select * from xx limit ?,? 
+					分页插件  pageHelper
+					
+			mybatis缓存？？
+				一级缓存	SqlSession  默认开启！！
+				二级缓存	SqlSessionFactory  默认不开启  	<cache/>
+			
+		
+		注解开发
+			@Select
+			@Delete
+			@Update
+			@Insert
+			
+			
+		主键返回？？
+		User uid==null		实在保存的时候，数据库自增的。
+		save(user) 保存用户的时候，将数据库自增的主键值，返回。设置到user的uid属性中
+		<insert parameterType='user'>
+		keyProperty ：指定将数据库自增的主键值设置到user对象的那个属性中
+		order：selectKey中的sql是先于insert执行(BEFORE)，还是后于insert执行（AFTER）。
+				<selectKey keyProperty='uid' resultType="int" 	order="AFTER">  101 user.setUid(101)
+						select last_inser_id();获取到当前主键自增的值 101
+				</selectKey>
+				insert into t_user values(null,#{username},#{password}) 101
+		</inser>
+		
+		
+		int uid = user.getUid() //可以拿到数据库自增的uid
+		在
+			order.setUid(uid)
+			save(order);	
+		
+		
+
+					
+			
+如何需要深入讲解（装X）？？
+	插件技术！！
+	执行原理！！
